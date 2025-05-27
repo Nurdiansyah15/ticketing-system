@@ -15,16 +15,13 @@
             </div>
         @endif
 
-        <div class="ticket-container p-4 rounded">
+        <!-- Tabel Tiket Aktif -->
+        <div class="ticket-container p-4 rounded mb-5">
             <h2 class="mb-3 text-white text-center">Daftar Aduan</h2>
 
             <div class="action-bar d-flex justify-content-between align-items-center mb-3 gap-2 overflow-auto">
-                <!-- Add Ticket Button -->
-                <a href="{{ route('tickets.create') }}" class="btn text-white border-0 primary-btn">
-                    Tambah Aduan
-                </a>
+                <a href="{{ route('tickets.create') }}" class="btn text-white border-0 primary-btn">Tambah Aduan</a>
 
-                <!-- Search and Pagination Form -->
                 <form action="{{ route('tickets.index') }}" method="GET" class="d-flex gap-2">
                     <input type="text" name="search" class="form-control text-white transparent-input"
                         value="{{ request('search') }}" placeholder="Cari judul atau status..." />
@@ -42,7 +39,6 @@
                 </form>
             </div>
 
-            <!-- Tickets Table -->
             <div class="table-responsive">
                 <table class="table table-hover text-white">
                     <thead>
@@ -78,7 +74,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($tickets as $ticket)
+                        @forelse ($tickets as $ticket)
                             <tr>
                                 <td>{{ $ticket->title }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</td>
@@ -92,12 +88,15 @@
                                     </a>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center">Tidak ada aduan.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <!-- Pagination Controls -->
             <div class="d-flex justify-content-between align-items-center mt-4">
                 <p class="m-0 text-white">Halaman {{ $tickets->currentPage() }} dari {{ $tickets->lastPage() }}</p>
                 <nav>
@@ -107,8 +106,42 @@
                 </nav>
             </div>
         </div>
-    </div>
 
+        <!-- Tabel Tiket Resolved -->
+        <div class="ticket-container p-4 rounded">
+            <h2 class="mb-3 text-white text-center">Daftar Aduan Selesai</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover text-white">
+                    <thead>
+                        <tr>
+                            <th>Judul</th>
+                            <th>Status</th>
+                            <th>Terakhir Diubah</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($resolvedTickets as $ticket)
+                            <tr>
+                                <td>{{ $ticket->title }}</td>
+                                <td>{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</td>
+                                <td>{{ $ticket->updated_at->format('d M Y H:i') }}</td>
+                                <td>
+                                    <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-info btn-sm">Detail</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center">Tidak ada aduan selesai.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
     <style>
         /* Container styling */
         .ticket-container {

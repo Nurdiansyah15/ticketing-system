@@ -14,34 +14,47 @@ class TicketController extends Controller
     /**
      * Menampilkan daftar tiket user.
      */
-    public function index(Request $request)
-    {
-        // Query dasar
-        $tickets = Ticket::where('user_id', Auth::user()->id);
+   public function index(Request $request)
+{
+    // Query dasar
+    $tickets = Ticket::where('user_id', Auth::user()->id)->where('status', '!=', 'resolved');
 
-        // Search global (judul dan status)
-        if ($request->has('search')) {
-            $search = $request->search;
-            $tickets->where(function ($query) use ($search) {
-                $query->where('title', 'like', '%' . $search . '%')
-                      ->orWhere('status', 'like', '%' . $search . '%');
-            });
-        }
-
-        // Sorting per kolom
-        if ($request->has('sort')) {
-            $direction = $request->direction === 'desc' ? 'desc' : 'asc';
-            $tickets->orderBy($request->sort, $direction);
-        } else {
-            $tickets->orderBy('created_at', 'desc'); // Default sorting
-        }
-
-        // Pagination
-     $perPage = $request->has('perPage') ? $request->perPage : 10;
-     $tickets = $tickets->paginate($perPage);
-
-        return view('tickets.index', compact('tickets'));
+    // Search global (judul dan status)
+    if ($request->has('search')) {
+        $search = $request->search;
+        $tickets->where(function ($query) use ($search) {
+            $query->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('status', 'like', '%' . $search . '%');
+        });
     }
+
+    // Sorting per kolom
+    if ($request->has('sort')) {
+        // Kalau kolom sorting-nya 'created_at', defaultnya ascending (terlama ke terbaru)
+        if ($request->sort === 'created_at') {
+            $direction = $request->direction === 'desc' ? 'desc' : 'asc';
+        } else {
+            // Sorting untuk kolom lain defaultnya descending
+            $direction = $request->direction === 'asc' ? 'asc' : 'desc';
+        }
+        $tickets->orderBy($request->sort, $direction);
+    } else {
+        // Default sorting berdasarkan created_at ASC (terlama ke terbaru)
+        $tickets->orderBy('created_at', 'asc');
+    }
+
+    // Pagination
+    $perPage = $request->has('perPage') ? $request->perPage : 10;
+    $tickets = $tickets->paginate($perPage);
+
+    $resolvedTickets = Ticket::where('user_id', Auth::user()->id)
+    ->where('status', 'resolved')
+    ->orderBy('created_at', 'desc')
+    ->paginate($perPage);
+
+    return view('tickets.index', compact('tickets', 'resolvedTickets'));
+}
+
 
     /**
      * Menampilkan form pembuatan tiket.
@@ -54,23 +67,31 @@ class TicketController extends Controller
     /**
      * Menyimpan tiket baru.
      */
-    public function store(Request $request)
-    {
-        // Validasi input
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-        ]);
+public function store(Request $request)
+{
+    // Validasi input
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'required|string',
+    ]);
 
-        // Simpan tiket baru
-        Auth::user()->tickets()->create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'status' => 'open', // Status default
-        ]);
+    // Cek apakah ada tiket berstatus open atau on_going di seluruh sistem
+    $hasOpenOrOngoing = \App\Models\Ticket::whereIn('status', ['open', 'on_going'])->exists();
 
-        return redirect()->route('tickets.index')->with('success', 'Tiket berhasil dibuat!');
-    }
+    // Tentukan status berdasarkan hasil pengecekan
+    $status = $hasOpenOrOngoing ? 'queue' : 'open';
+
+    // Simpan tiket baru untuk user yang login
+    Auth::user()->tickets()->create([
+        'title' => $request->title,
+        'description' => $request->description,
+        'status' => $status,
+    ]);
+
+    return redirect()->route('tickets.index')->with('success', 'Tiket berhasil dibuat!');
+}
+
+
 
     /**
      * Menampilkan detail tiket.
@@ -120,52 +141,65 @@ class TicketController extends Controller
     /**
      * Menampilkan daftar semua tiket (hanya admin).
      */
-    public function adminIndex(Request $request)
-    {
-        // Gunakan query builder agar bisa mengelola sorting dan filtering dengan lebih fleksibel
-        $query = Ticket::query()->with('user');
+   public function adminIndex(Request $request)
+{
+    // Query builder untuk tiket yang **belum resolved**
+    $query = Ticket::query()->with('user')
+        ->where('status', '!=', 'resolved');  // Tambahkan filter exclude resolved
 
-        // Search global (judul dan status)
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                  ->orWhere('status', 'like', '%' . $search . '%');
-            });
-        }
-
-        // Sorting per kolom
-        if ($request->has('sort')) {
-            $sortColumn = $request->sort;
-            $direction = $request->direction === 'desc' ? 'desc' : 'asc';
-
-            // Cek apakah user mencoba sorting berdasarkan kolom di tabel `users`
-            if ($sortColumn === 'username') {
-                $query->join('users', 'tickets.user_id', '=', 'users.id')
-                      ->select('tickets.*', 'users.name as user_name')
-                      ->orderBy('users.name', $direction);
-            } else {
-                $query->orderBy($sortColumn, $direction);
-            }
-        } else {
-            $query->orderBy('created_at', 'desc'); // Default sorting
-        }
-
-        // Pagination
-        $perPage = $request->get('perPage', 10);
-        $tickets = $query->paginate($perPage);
-
-        return view('admin.tickets.index', compact('tickets'));
+    // Search global (judul dan status)
+    if ($request->has('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', '%' . $search . '%')
+              ->orWhere('status', 'like', '%' . $search . '%');
+        });
     }
+
+    // Sorting per kolom
+    if ($request->has('sort')) {
+        $sortColumn = $request->sort;
+        $direction = $request->direction === 'desc' ? 'desc' : 'asc';
+
+        // Cek sorting berdasarkan kolom di tabel users
+        if ($sortColumn === 'username') {
+            $query->join('users', 'tickets.user_id', '=', 'users.id')
+                  ->select('tickets.*', 'users.name as user_name')
+                  ->orderBy('users.name', $direction);
+        } else {
+            $query->orderBy($sortColumn, $direction);
+        }
+    } else {
+        $query->orderBy('created_at', 'asc'); // Default sorting
+    }
+
+    // Pagination
+    $perPage = $request->get('perPage', 10);
+    $tickets = $query->paginate($perPage);
+
+    // Query tiket yang sudah resolved (untuk tabel baru)
+    $resolvedTickets = Ticket::where('status', 'resolved')
+        ->with('user')
+        ->orderBy('updated_at', 'desc')
+        ->paginate($perPage);
+
+    return view('admin.tickets.index', compact('tickets', 'resolvedTickets'));
+}
+
 
 
       /**
      * Menampilkan detail tiket.
      */
     public function adminShow(Ticket $ticket)
-    {
-        return view('admin.tickets.show', compact('ticket'));
+{
+    if ($ticket->status === 'queue') {
+        abort(403, 'Tiket belum bisa dibuka.');
     }
+
+    return view('admin.tickets.show', compact('ticket'));
+}
+
 
     /**
      * Mengupdate status tiket (hanya admin).
@@ -174,7 +208,7 @@ class TicketController extends Controller
     {
         // Validasi input
         $request->validate([
-            'status' => 'required|in:open,in_progress,resolved,closed',
+            'status' => 'required|in:open,on_going,resolved,closed',
         ]);
 
         // Update status tiket
@@ -182,6 +216,22 @@ class TicketController extends Controller
 
         return redirect()->route('admin.tickets.index')->with('success', 'Status tiket berhasil diperbarui!');
     }
+
+    /**
+ * Memulai tiket (ubah status dari open ke on_going) — hanya admin.
+ */
+public function adminStart(Ticket $ticket)
+{
+    // Pastikan hanya tiket dengan status 'open' yang bisa dimulai
+    if ($ticket->status !== 'open') {
+        return back()->with('error', 'Hanya tiket dengan status "open" yang bisa dimulai.');
+    }
+
+    // Ubah status tiket menjadi 'on_going'
+    $ticket->update(['status' => 'on_going']);
+
+    return redirect()->route('admin.tickets.index')->with('success', 'Tiket berhasil dimulai.');
+}
 
     /**
      * Menghapus tiket (hanya admin).

@@ -7,7 +7,10 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\TicketConversationController;
 use App\Http\Controllers\ReportController;
+
+
 
 
 // Route untuk halaman utama (home)
@@ -26,6 +29,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketController::class)->except(['destroy']);
     Route::get('/password/edit', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('/password/update', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::post('/tickets/{ticket}/conversations', [TicketConversationController::class, 'store'])->name('tickets.conversations.store');
+    Route::patch('/tickets/{ticket}/mark-resolved', [TicketConversationController::class, 'markResolved'])->name('tickets.markResolved');
+    Route::post('/tickets/{ticket}/not-resolved', [TicketConversationController::class, 'notResolved'])->name('tickets.notResolved');
+
 });
 
 // Route untuk admin (hanya bisa diakses oleh admin)
@@ -46,5 +54,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/reports/print', [ReportController::class, 'print'])->name('admin.reports.print');
+
+
+   Route::patch('/tickets/{ticket}/start', [TicketConversationController::class, 'start'])->name('tickets.start');
+Route::patch('/tickets/{ticket}/propose-resolved', [TicketConversationController::class, 'askResolved'])->name('tickets.proposeResolved');
+
+
 });
 

@@ -9,7 +9,6 @@
             </div>
         @endif
 
-
         @if (session('error'))
             <div class="alert alert-danger text-center text-white">
                 {{ session('error') }}
@@ -19,7 +18,6 @@
         <div class="ticket-container p-4 rounded">
             <h2 class="mb-3 text-white text-center">Daftar Aduan</h2>
             <div class="action-bar d-flex justify-content-between align-items-center mb-3 gap-2 overflow-auto">
-
                 <!-- Search and Pagination Form -->
                 <form action="{{ route('admin.tickets.index') }}" method="GET" class="d-flex gap-2 flex-grow-1">
                     <input type="text" name="search" class="form-control text-white transparent-input"
@@ -48,7 +46,7 @@
                                     'title' => 'Judul',
                                     'username' => 'User',
                                     'status' => 'Status',
-                                    'updated_at' => 'Terakhir Diubah',
+                                    'created_at' => 'Tanggal',
                                 ];
                             @endphp
 
@@ -79,28 +77,15 @@
                             <tr>
                                 <td>{{ $ticket->title }}</td>
                                 <td>{{ $ticket->user->name }}</td>
+                                <td>{{ $ticket->status }}</td>
+                                <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                                 <td>
-                                    <form action="{{ route('admin.tickets.update', $ticket) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('PUT')
-                                        <select name="status" onchange="this.form.submit()">
-                                            <option value="open" {{ $ticket->status == 'open' ? 'selected' : '' }}>Open
-                                            </option>
-                                            <option value="in_progress"
-                                                {{ $ticket->status == 'in_progress' ? 'selected' : '' }}>In Progress
-                                            </option>
-                                            <option value="resolved" {{ $ticket->status == 'resolved' ? 'selected' : '' }}>
-                                                Resolved</option>
-                                            <option value="closed" {{ $ticket->status == 'closed' ? 'selected' : '' }}>
-                                                Closed</option>
-                                        </select>
-                                    </form>
-                                </td>
-                                <td>{{ $ticket->updated_at->format('d M Y H:i') }}</td>
-                                <td>
-                                    <a href="{{ route('admin.tickets.show', $ticket) }}"
-                                        class="btn btn-info btn-sm">Detail</a>
+                                    @if ($ticket->status !== 'queue')
+                                        <a href="{{ route('admin.tickets.show', $ticket) }}"
+                                            class="btn btn-info btn-sm">Detail</a>
+                                    @else
+                                        <button class="btn btn-secondary btn-sm" disabled>Detail</button>
+                                    @endif
                                     <form action="{{ route('admin.tickets.destroy', $ticket) }}" method="POST"
                                         class="d-inline"
                                         onsubmit="return confirm('Apakah Anda yakin ingin menghapus aduan ini?');">
@@ -115,7 +100,6 @@
                 </table>
             </div>
 
-
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center mt-4">
                 <p class="m-0 text-white">Halaman {{ $tickets->currentPage() }} dari {{ $tickets->lastPage() }}</p>
@@ -126,6 +110,55 @@
                 </nav>
             </div>
 
+        </div>
+
+        <!-- Tabel baru untuk resolved tickets -->
+        <div class="ticket-container p-4 rounded mt-5">
+            <h2 class="mb-3 text-white text-center">Daftar Aduan Resolved</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover text-white">
+                    <thead>
+                        <tr>
+                            <th>Judul</th>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Tanggal Selesai</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($resolvedTickets as $ticket)
+                            <tr>
+                                <td>{{ $ticket->title }}</td>
+                                <td>{{ $ticket->user->name }}</td>
+                                <td>{{ $ticket->status }}</td>
+                                <td>{{ $ticket->updated_at->format('d M Y H:i') }}</td>
+                                <td>
+                                    <a href="{{ route('admin.tickets.show', $ticket) }}"
+                                        class="btn btn-info btn-sm">Detail</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                        @if ($resolvedTickets->isEmpty())
+                            <tr>
+                                <td colspan="5" class="text-center">Tidak ada aduan yang telah diselesaikan.</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination resolved tickets -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <p class="m-0 text-white">Halaman {{ $resolvedTickets->currentPage() }} dari
+                    {{ $resolvedTickets->lastPage() }}</p>
+                <nav>
+                    <ul class="pagination m-0">
+                        {{ $resolvedTickets->appends(request()->query())->onEachSide(1)->links('pagination::simple-bootstrap-5') }}
+                    </ul>
+                </nav>
+            </div>
         </div>
 
     </div>
@@ -148,7 +181,6 @@
             background-color: white;
             color: black;
         }
-
 
         /* Button styling */
         .primary-btn {

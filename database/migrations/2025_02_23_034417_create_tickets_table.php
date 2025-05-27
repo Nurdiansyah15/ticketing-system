@@ -15,8 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('title'); // Judul tiket
             $table->text('description'); // Deskripsi masalah
-            $table->enum('status', ['open', 'in_progress', 'resolved', 'closed'])->default('open'); // Status tiket
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // ID user yang membuat tiket
+            $table->enum('status', [
+                'queue',               // Tiket dalam antrean
+                'open',                // Sedang dibuka oleh admin
+                'waiting_for_answer',  // Menunggu jawaban dari user
+                'waiting_for_resolved',// Menunggu konfirmasi selesai dari user
+                'on_going',            // Proses penyelesaian (jika dibutuhkan)
+                'resolved'             // Tiket selesai
+            ])->default('queue');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Pembuat tiket
             $table->timestamps();
         });
     }

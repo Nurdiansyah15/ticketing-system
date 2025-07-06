@@ -77,7 +77,7 @@
                             <tr>
                                 <td>{{ $ticket->title }}</td>
                                 <td>{{ $ticket->user->name }}</td>
-                                <td>{{ $ticket->status }}</td>
+                                <td>{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</td>
                                 <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                                 <td>
                                     @if ($ticket->status !== 'queue')

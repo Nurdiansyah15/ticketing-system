@@ -33,7 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/conversations', [TicketConversationController::class, 'store'])->name('tickets.conversations.store');
     Route::patch('/tickets/{ticket}/mark-resolved', [TicketConversationController::class, 'markResolved'])->name('tickets.markResolved');
     Route::post('/tickets/{ticket}/not-resolved', [TicketConversationController::class, 'notResolved'])->name('tickets.notResolved');
-
+    Route::get('/tickets/{ticket}/rating', [TicketConversationController::class, 'showRating'])->name('tickets.rating.show');
+    Route::post('/tickets/{ticket}/rating', [TicketConversationController::class, 'submitRating'])->name('tickets.rating.submit');
 });
 
 // Route untuk admin (hanya bisa diakses oleh admin)
@@ -50,15 +51,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('users/create', [UserController::class, 'create'])->name('admin.users.create');
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
     Route::put('users/{user}', [UserController::class, 'update'])->name('admin.users.update');
-    Route::delete('users/{user}',[UserController::class,'destroy'])->name('admin.users.destroy');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/reports/print', [ReportController::class, 'print'])->name('admin.reports.print');
 
 
-   Route::patch('/tickets/{ticket}/start', [TicketConversationController::class, 'start'])->name('tickets.start');
-Route::patch('/tickets/{ticket}/propose-resolved', [TicketConversationController::class, 'askResolved'])->name('tickets.proposeResolved');
-
-
+    Route::patch('/tickets/{ticket}/start', [TicketConversationController::class, 'start'])->name('tickets.start');
+    Route::patch('/tickets/{ticket}/propose-resolved', [TicketConversationController::class, 'askResolved'])->name('tickets.proposeResolved');
 });
-

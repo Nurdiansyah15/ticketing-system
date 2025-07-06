@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'rating',
     ];
 
     /**
@@ -53,7 +54,12 @@ class User extends Authenticatable
     }
 
     public function tickets()
-{
-    return $this->hasMany(Ticket::class);
-}
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'admin_id');
+    }
 }

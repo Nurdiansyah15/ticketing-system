@@ -46,6 +46,7 @@
                             @php
                                 $columns = [
                                     'title' => 'Judul',
+                                    'admin_id' => 'Admin',
                                     'status' => 'Status',
                                     'updated_at' => 'Terakhir Diubah',
                                 ];
@@ -77,15 +78,17 @@
                         @forelse ($tickets as $ticket)
                             <tr>
                                 <td>{{ $ticket->title }}</td>
+                                <td>{{ $ticket->admin->name }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</td>
                                 <td>{{ $ticket->updated_at->format('d M Y H:i') }}</td>
                                 <td>
                                     <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-info btn-sm">Detail</a>
                                     <a href="{{ route('tickets.edit', $ticket) }}"
-                                        class="btn btn-warning btn-sm {{ $ticket->status != 'open' ? 'disabled' : '' }}"
-                                        @if ($ticket->status != 'open') aria-disabled="true" @endif>
+                                        class="btn btn-warning btn-sm {{ !in_array($ticket->status, ['open', 'queue']) ? 'disabled' : '' }}"
+                                        @if (!in_array($ticket->status, ['open', 'queue'])) aria-disabled="true" @endif>
                                         Edit
                                     </a>
+
                                 </td>
                             </tr>
                         @empty

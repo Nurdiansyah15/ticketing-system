@@ -39,7 +39,7 @@ class TicketPolicy
     public function update(User $user, Ticket $ticket)
     {
         // User hanya bisa mengedit tiketnya sendiri
-        return $user->id === $ticket->user_id && $ticket->status === 'open';
+        return $user->id === $ticket->user_id && in_array($ticket->status, ['open', 'queue']);
     }
 
     /**

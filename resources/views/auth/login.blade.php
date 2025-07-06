@@ -50,6 +50,12 @@
                 </div>
             @endif
 
+            @if (session('success'))
+                <div class="alert alert-success p-2">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}" class="text-start">
                 @csrf
                 <div class="mb-3">

@@ -22,6 +22,36 @@
                     <textarea name="description" class="form-control" rows="5"
                         style="background-color: transparent; border: 1px solid #fff; color: white;" required></textarea>
                 </div>
+                <div class="mb-3">
+                    <label for="admin_id" class="form-label text-light">Pilih Admin</label>
+                    <select name="admin_id" class="form-select"
+                        style="background-color: transparent; border: 1px solid #fff; color: white;" required>
+                        <option value="" disabled selected>Pilih Admin</option>
+                        @foreach ($admins as $admin)
+                            <option value="{{ $admin->id }}">
+                                {{ $admin->name }}
+                                (Jumlah antrian: {{ $admin->queue_count }})
+                                (
+
+                                @php
+                                    $fullStars = floor($admin->rating); // bintang penuh
+                                    $maxStars = 5;
+                                @endphp
+
+                                @for ($i = 1; $i <= $maxStars; $i++)
+                                    @if ($i <= $fullStars)
+                                        ★
+                                    @else
+                                        ☆
+                                    @endif
+                                @endfor
+
+                                )
+                            </option>
+                        @endforeach
+
+                    </select>
+                </div>
                 <button type="submit" class="btn w-100"
                     style="background-color: #646E67; color: white; border: none; border-radius: 4px; padding: 10px;
                 transition: background-color 0.3s ease;"

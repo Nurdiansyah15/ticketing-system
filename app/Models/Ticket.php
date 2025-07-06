@@ -14,6 +14,8 @@ class Ticket extends Model
         'description',
         'status',
         'user_id',
+        'admin_id',
+        'admin_rating',
     ];
 
     // Relasi ke User
@@ -22,9 +24,13 @@ class Ticket extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function conversations()
-{
-    return $this->hasMany(TicketConversation::class);
-}
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
 
+    public function conversations()
+    {
+        return $this->hasMany(TicketConversation::class);
+    }
 }

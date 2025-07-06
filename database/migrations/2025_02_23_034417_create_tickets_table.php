@@ -19,11 +19,13 @@ return new class extends Migration
                 'queue',               // Tiket dalam antrean
                 'open',                // Sedang dibuka oleh admin
                 'waiting_for_answer',  // Menunggu jawaban dari user
-                'waiting_for_resolved',// Menunggu konfirmasi selesai dari user
+                'waiting_for_resolved', // Menunggu konfirmasi selesai dari user
                 'on_going',            // Proses penyelesaian (jika dibutuhkan)
                 'resolved'             // Tiket selesai
             ])->default('queue');
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Pembuat tiket
+            $table->foreignId('admin_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->integer("admin_rating")->default(0);
             $table->timestamps();
         });
     }

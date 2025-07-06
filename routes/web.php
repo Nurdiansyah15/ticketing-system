@@ -35,6 +35,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/not-resolved', [TicketConversationController::class, 'notResolved'])->name('tickets.notResolved');
     Route::get('/tickets/{ticket}/rating', [TicketConversationController::class, 'showRating'])->name('tickets.rating.show');
     Route::post('/tickets/{ticket}/rating', [TicketConversationController::class, 'submitRating'])->name('tickets.rating.submit');
+
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
 });
 
 // Route untuk admin (hanya bisa diakses oleh admin)

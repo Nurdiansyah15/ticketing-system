@@ -7,6 +7,8 @@
         <title>{{ config('app.name', 'Ticketing System') }}</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
 
         <style>
             body {
@@ -49,6 +51,38 @@
                         @auth
                             <div class="dropdown d-flex align-items-center">
 
+                                <div class="me-3">
+                                    <a href="https://wa.me/6282313650125" target="_blank"
+                                        class="btn border-0 bg-transparent text-white position-relative"
+                                        title="Hubungi Customer Service">
+                                        <i class="bi bi-telephone" style="font-size: 1.5rem;"></i>
+                                    </a>
+                                </div>
+
+
+                                <div class="me-3 position-relative">
+                                    <div class="dropdown me-3 position-relative">
+                                        <button id="notifBtn"
+                                            class="btn border-0 bg-transparent text-white position-relative dropdown-toggle"
+                                            type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-bell" style="font-size: 1.5rem;"></i>
+                                            <span id="notifCount"
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                                style="font-size: 0.6rem; display: none;">0</span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="width: 300px;"
+                                            id="notifList">
+                                            <li class="dropdown-header">Notifikasi</li>
+                                            <li>
+                                                <hr class="dropdown-divider">
+                                            </li>
+                                            <li class="text-center text-muted"><small>Memuat...</small></li>
+                                        </ul>
+                                    </div>
+
+                                </div>
+
+
                                 <button class="btn dropdown-toggle d-flex align-items-center gap-2 border-0" type="button"
                                     style="background-color: #7B887F; outline: none; box-shadow: none; color: white;"
                                     onmouseover="this.style.backgroundColor='#96A691';"
@@ -63,9 +97,6 @@
                                         <strong class="d-block" style="margin-top: -4px">{{ auth()->user()->name }}</strong>
                                         <small style="margin-top: -4px">{{ auth()->user()->role }}</small>
                                     </div>
-
-                                    <!-- Icon dropdown putih -->
-                                    <i class="bi bi-chevron-down text-white"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item" href="{{ route('password.edit') }}">Ubah Password</a></li>
@@ -111,6 +142,87 @@
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            const USER_ROLE = "{{ auth()->user()->role }}";
+            async function fetchNotifications() {
+                try {
+                    const res = await fetch(`{{ route('notifications.index') }}`);
+                    const data = await res.json();
+
+                    const badge = document.getElementById('notifCount');
+                    const list = document.getElementById('notifList');
+
+                    // Update badge
+                    if (data.length > 0) {
+                        badge.textContent = data.length;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+
+                    // Build dropdown list
+                    list.innerHTML = '';
+                    list.innerHTML += '<li class="dropdown-header">Notifikasi</li>';
+                    list.innerHTML += '<li><hr class="dropdown-divider"></li>';
+
+                    if (data.length === 0) {
+                        list.innerHTML +=
+                            '<li class="text-center text-muted"><small>Tidak ada notifikasi baru</small></li>';
+                    } else {
+                        data.forEach(notif => {
+                            let ticketUrl = USER_ROLE === 'admin' ?
+                                `/admin/tickets/${notif.ticket_id}` :
+                                `/tickets/${notif.ticket_id}`;
+
+                            list.innerHTML += `
+                                <li class="px-3 py-2 text-wrap small border-bottom">
+                                    <div class="d-flex">
+                                        <i class="bi bi-info-circle text-primary me-2"></i>
+                                        <div>
+                                            <p class="fw-medium mb-2">${notif.message}</p>
+                                            <div class="text-muted text-start" style="font-size: 0.7rem;">
+                                                ${new Date(notif.created_at).toLocaleString()}
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <a href="${ticketUrl}" class="btn btn-sm btn-outline-primary">Lihat Tiket</a>
+                                    </div>
+                                </li>
+                            `;
+                        });
+
+
+                        list.innerHTML += '<li><hr class="dropdown-divider"></li>';
+                        list.innerHTML +=
+                            '<li class="text-center"><a href="#" class="text-primary small" id="markReadLink">Tandai sudah dibaca</a></li>';
+                    }
+                } catch (e) {
+                    console.error("Gagal mengambil notifikasi:", e);
+                }
+            }
+
+            setInterval(fetchNotifications, 5000);
+            document.addEventListener("DOMContentLoaded", fetchNotifications);
+
+            document.addEventListener("click", function(e) {
+                if (e.target.id === 'markReadLink') {
+                    e.preventDefault();
+                    fetch(`{{ route('notifications.read') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        document.getElementById('notifCount').style.display = 'none';
+                        fetchNotifications(); // refresh isi list
+                    });
+                }
+            });
+        </script>
+
+
     </body>
 
 </html>

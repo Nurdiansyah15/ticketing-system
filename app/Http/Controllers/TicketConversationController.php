@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Ticket;
 use App\Models\TicketConversation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Mockery\Matcher\Not;
 
 class TicketConversationController extends Controller
 {
@@ -42,13 +44,20 @@ class TicketConversationController extends Controller
             $ticket->update(['status' => 'queue']);
         }
 
-        $openTicketExists = Ticket::where('status', 'open')->exists();
+        $openTicketExists = Ticket::where('status', 'open')->where('admin_id', $ticket->admin_id)->exists();
 
         if (!$openTicketExists) {
             Ticket::where('status', 'queue')
+                ->where('admin_id', $ticket->admin_id)
                 ->orderBy('created_at')
                 ->first()?->update(['status' => 'open']);
         }
+
+        Notification::create([
+            'user_id' => $user->role === 'admin' ? $ticket->user_id : $ticket->admin_id,
+            'message' => 'Ada pesan baru untuk tiket ' . $ticket->title,
+            'ticket_id' => $ticket->id,
+        ]);
 
         return back()->with('success', 'Pesan berhasil dikirim.');
     }
@@ -60,6 +69,12 @@ class TicketConversationController extends Controller
         if ($ticket->status === 'open') {
             $ticket->update(['status' => 'on_going']);
         }
+
+        Notification::create([
+            'user_id' => $ticket->user_id,
+            'message' => 'Tiket ' . $ticket->title . ' baru saja dimulai.',
+            'ticket_id' => $ticket->id,
+        ]);
 
         return back()->with('success', 'Percakapan dimulai.');
     }
@@ -86,9 +101,16 @@ class TicketConversationController extends Controller
 
         if ($user->role === 'admin') {
             Ticket::where('status', 'queue')
+                ->where('admin_id', $user->id)
                 ->orderBy('created_at')
                 ->first()?->update(['status' => 'open']);
         }
+
+        Notification::create([
+            'user_id' => $ticket->user_id,
+            'message' => 'Admin meminta penyelesaian untuk tiket ' . $ticket->title,
+            'ticket_id' => $ticket->id,
+        ]);
 
         return back()->with('success', 'Permintaan penyelesaian telah dikirim.');
     }
@@ -102,6 +124,12 @@ class TicketConversationController extends Controller
         // Gate::authorize('update', $ticket);
 
         $ticket->update(['status' => 'resolved']);
+
+        Notification::create([
+            'user_id' => $ticket->admin_id,
+            'message' => 'Tiket ' . $ticket->title . ' telah selesai.',
+            'ticket_id' => $ticket->id,
+        ]);
 
         return redirect()->route('tickets.rating.show', $ticket->id)
             ->with('success', 'Tiket ditandai telah selesai. Silakan beri penilaian.');
@@ -126,6 +154,12 @@ class TicketConversationController extends Controller
 
         // Kembalikan status ke queue
         $ticket->update(['status' => 'queue']);
+
+        Notification::create([
+            'user_id' => $ticket->admin_id,
+            'message' => 'Tiket ' . $ticket->title . ' belum sesuai.',
+            'ticket_id' => $ticket->id,
+        ]);
 
         return back()->with('success', 'Masukan tambahan telah dikirim.');
     }
@@ -166,6 +200,13 @@ class TicketConversationController extends Controller
         \App\Models\User::where('id', $adminId)->update([
             'rating' => round($averageRating, 2), // Bisa dibulatkan jika perlu
         ]);
+
+        Notification::create([
+            'user_id' => $ticket->admin_id,
+            'message' => 'Tiket ' . $ticket->title . ' telah selesai. User ' . $ticket->user->name . ' telah memberikan penilaian ' . $request->rating . '',
+            'ticket_id' => $ticket->id,
+        ]);
+
 
         // Redirect kembali atau ke halaman lain
         return redirect()

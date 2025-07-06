@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\User;
@@ -98,13 +99,20 @@ class TicketController extends Controller
         $status = $hasOpenOrOngoing ? 'queue' : 'open';
 
 
-        Ticket::create([
+        $ticket = Ticket::create([
             'user_id' => Auth::id(),              // User yang membuat tiket
             'admin_id' => intval($request->admin_id),     // Admin yang dipilih
             'title' => $request->title,
             'description' => $request->description,
             'status' => $status,
         ]);
+
+        Notification::create([
+            'user_id' => $request->admin_id,
+            'message' => 'Tiket baru telah dibuat.',
+            'ticket_id' => $ticket->id,
+        ]);
+
 
 
         return redirect()->route('tickets.index')->with('success', 'Tiket berhasil dibuat!');
@@ -216,7 +224,7 @@ class TicketController extends Controller
     public function adminShow(Ticket $ticket)
     {
         if ($ticket->status === 'queue') {
-            abort(403, 'Tiket belum bisa dibuka.');
+            abort(403, 'Tiket belum bisa dibuka karena masih dalam antrean.');
         }
 
         return view('admin.tickets.show', compact('ticket'));

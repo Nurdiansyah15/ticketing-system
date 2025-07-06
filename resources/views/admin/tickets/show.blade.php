@@ -32,6 +32,17 @@
                     {{ $ticket->created_at->format('d M Y H:i') }}</p>
                 <p class="text-light"><i class="fas fa-history"></i> <strong>Update:</strong>
                     {{ $ticket->updated_at->format('d M Y H:i') }}</p>
+                <p class="text-light"><strong>Rating:</strong>
+                    @if ($ticket->admin_rating > 0)
+                        <span class="ms-2">
+                            @for ($i = 1; $i <= 5; $i++)
+                                <i class="bi bi-star{{ $i <= $ticket->admin_rating ? '-fill text-warning' : '' }}"></i>
+                            @endfor
+                        </span>
+                    @else
+                        <span class="text-muted">Belum dinilai</span>
+                    @endif
+                </p>
             </div>
         </div>
 
